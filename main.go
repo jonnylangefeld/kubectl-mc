@@ -27,6 +27,7 @@ func main() {
 // MC contains the options of the command
 type MC struct {
 	Regex    string
+	NegRegex string
 	ListOnly bool
 }
 
@@ -38,9 +39,17 @@ func NewMC() *cobra.Command {
 		Use:   "mc [flags] -- [kubectl command]",
 		Short: "Run kubectl commands against multiple clusters at once",
 		Example: `
+# list all kind contexts
 mc -r kind -l
+
+# list the pods in the kube-system namespace of all dev clusters
 mc -r dev -- get pods -n kube-system
-mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep infinity`,
+
+# run a debug container on every kind cluster in the context
+mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep infinity
+
+# list all contexts with 'dev' in the name, but not '-ci-' in the name
+mc -r dev -l -n '-test-'`,
 		SilenceUsage: true,
 		Version:      version,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -53,7 +62,9 @@ mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep inf
 	}
 
 	cmd.Flags().StringVarP(&mc.Regex, "regex", "r", mc.Regex, "a regex to filter the list of context names in kubeconfig. If not given all contexts are used")
+	cmd.Flags().StringVarP(&mc.NegRegex, "negative-regex", "n", mc.NegRegex, "a regex to exclude matches from the result set. Evaluated succeeding to the including regex filter")
 	cmd.Flags().BoolVarP(&mc.ListOnly, "list-only", "l", mc.ListOnly, "just list the contexts matching the regex. Good for testing your regex")
+
 	return cmd
 }
 
@@ -106,6 +117,10 @@ func (mc *MC) listContexts() (contexts []string, err error) {
 	if err != nil {
 		return nil, err
 	}
+	nr, err := regexp.Compile(mc.NegRegex)
+	if err != nil {
+		return nil, err
+	}
 
 	args := []string{"config", "get-contexts", "-o", "name"}
 
@@ -118,6 +133,9 @@ func (mc *MC) listContexts() (contexts []string, err error) {
 	for s.Scan() {
 		context := s.Bytes()
 		if r.Match(context) {
+			if mc.NegRegex != "" && nr.Match(context) {
+				continue
+			}
 			contexts = append(contexts, string(context))
 		}
 	}
