@@ -44,3 +44,23 @@ kube-controller-manager-another-kind-cluster-control-plane   1/1     Running   0
 kube-proxy-kq2tr                                             1/1     Running   0          91s
 kube-scheduler-another-kind-cluster-control-plane            1/1     Running   0          92s
 ```
+
+## Speed Comparison
+
+To demonstrate the advantages in speed, here is the same task once executed as bash script and once using `kubectl-mc` for a list of  cluster:
+
+```bash
+$ kubectl mc -r 'prod' -l | wc -l
+      13
+
+$ time kubectl mc -r 'prod' -- get pods -n gatekeeper-system -l gatekeeper.sh/operation=audit > /dev/null
+kubectl mc -r 'prod' -- get pods -n gatekeeper-system -l  > /dev/null  1.68s user 1.03s system 123% cpu 2.191 total
+
+$ print "for c in \$(kubectx | grep -E 'prod'); do echo $c && kubectl get pods -n gatekeeper-system -l gatekeeper.sh/operation=audit --context $c ; done" > /tmp/loop.sh && \
+chmod +x /tmp/loop.sh
+
+$ time /tmp/loop.sh > /dev/null
+/tmp/loop.sh > /dev/null  1.41s user 1.17s system 33% cpu 7.801 total
+```
+
+While the execution via bash loop over 13 clusters took 7.9 seconds, `kubectl-mc` only took 2.2 seconds in this non-empirical test.
