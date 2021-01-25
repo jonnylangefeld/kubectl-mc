@@ -1,0 +1,10 @@
+# Configuration for https://goreleaser.com/
+project_name: kubectl-mc
+
+release:
+  github:
+    owner: jonnylangefeld
+    name: kubectl-mc
+  draft: false
+  prerelease: false
+  name_template: "v{{.Version}}"
