@@ -4,17 +4,17 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
-
-	"github.com/spf13/cobra"
 )
 
 var (
 	version string
+	logger  *zap.Logger
 )
 
 func main() {
@@ -29,6 +29,8 @@ type MC struct {
 	Regex    string
 	NegRegex string
 	ListOnly bool
+	MaxProc  int
+	Debug bool
 }
 
 // NewMC registers the default mc command
@@ -53,6 +55,11 @@ mc -r dev -l -n '-test-'`,
 		SilenceUsage: true,
 		Version:      version,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, _ = zap.NewProduction()
+			if mc.Debug {
+				logger, _ = zap.NewDevelopment()
+			}
+			defer logger.Sync()
 			if len(args) == 0 && !mc.ListOnly {
 				cmd.Usage()
 				return nil
@@ -64,6 +71,8 @@ mc -r dev -l -n '-test-'`,
 	cmd.Flags().StringVarP(&mc.Regex, "regex", "r", mc.Regex, "a regex to filter the list of context names in kubeconfig. If not given all contexts are used")
 	cmd.Flags().StringVarP(&mc.NegRegex, "negative-regex", "n", mc.NegRegex, "a regex to exclude matches from the result set. Evaluated succeeding to the including regex filter")
 	cmd.Flags().BoolVarP(&mc.ListOnly, "list-only", "l", mc.ListOnly, "just list the contexts matching the regex. Good for testing your regex")
+	cmd.Flags().IntVarP(&mc.MaxProc, "max-processes", "p", 100, "max amount of parallel kubectl to be exectued. Can be used to limit cpu activity")
+	cmd.Flags().BoolVarP(&mc.Debug, "debug", "d", mc.Debug, "enable debug output")
 
 	return cmd
 }
@@ -76,37 +85,40 @@ func (mc *MC) run(args []string) error {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	for _, c := range contexts {
-		if mc.ListOnly {
+	if mc.ListOnly {
+		for _, c := range contexts {
 			fmt.Println(c)
-			continue
 		}
-
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, c string, args []string) {
-			defer wg.Done()
-			localArgs := []string{}
-			var skipContext bool
-			for _, arg := range args {
-				if arg == "--" {
-					// If this is given, we need to insert the context before this arg
-					localArgs = append(localArgs, "--context", c)
-					skipContext = true
-				}
-				localArgs = append(localArgs, arg)
-			}
-			if !skipContext {
-				localArgs = append(localArgs, "--context", c)
-			}
-			stdout, err := kubectl(localArgs)
-			if err != nil {
-				stdout = bytes.NewBuffer([]byte(err.Error()))
-			}
-			fmt.Printf("\n%s\n%s\n%s", c, strings.Repeat("-", len(c)), string(stdout.Bytes()))
-		}(&wg, c, args)
+		return nil
 	}
-	wg.Wait()
+
+	logger.Debug("preparing wait group", zap.Int("max-processes", mc.MaxProc))
+	parallelProc := make(chan bool, mc.MaxProc)
+	for i := 0; i < mc.MaxProc; i++ {
+		parallelProc <- true
+	}
+
+	done := make(chan bool)
+	wait := make(chan bool)
+
+	logger.Debug("start wait group")
+	go func() {
+		for i := 0; i < len(contexts); i++ {
+			<-done
+			parallelProc <- true
+		}
+		logger.Debug("wait group finished")
+		wait <- true
+	}()
+
+	for _, c := range contexts {
+		logger.Debug("waiting for next free spot", zap.String("context", c))
+		<-parallelProc
+		logger.Debug("executing", zap.String("context", c))
+		go do(done, c, args)
+	}
+	<-wait
+	logger.Debug("done")
 
 	return nil
 }
@@ -141,6 +153,29 @@ func (mc *MC) listContexts() (contexts []string, err error) {
 	}
 
 	return
+}
+
+// do executes a command against kubectl and sends a bool to the done channel when done
+func do(done chan bool, c string, args []string) {
+	var localArgs []string
+	var skipContext bool
+	for _, arg := range args {
+		if arg == "--" {
+			// If this is given, we need to insert the context before this arg
+			localArgs = append(localArgs, "--context", c)
+			skipContext = true
+		}
+		localArgs = append(localArgs, arg)
+	}
+	if !skipContext {
+		localArgs = append(localArgs, "--context", c)
+	}
+	stdout, err := kubectl(localArgs)
+	if err != nil {
+		stdout = bytes.NewBuffer([]byte(err.Error()))
+	}
+	fmt.Printf("\n%s\n%s\n%s", c, strings.Repeat("-", len(c)), string(stdout.Bytes()))
+	done <- true
 }
 
 // kubectl executes a kubectl command
