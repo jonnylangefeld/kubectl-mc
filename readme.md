@@ -4,7 +4,7 @@ Run kubectl commands against multiple clusters at once.
 
 If you work at a company or organization that maintains multiple Kubernetes clusters it is fairly common to connect to multiple different kubernetes clusters throughout your day. And sometimes you want to execute a command against multiple clusters at once. For instance to get the status of a deployment across all `staging` clusters. You could run your `kubectl` command in a bash loop. That does not only require some bash logic, but also it'll take a while to get your results because every loop iteration is an individual API round trip executed successively.
 
-`kubectl-mc` intends to support this workflow and significantly reduce the return time by executing the necessary API requests in parallel go routines.
+`kubectl-mc` supports this workflow and significantly reduces the return time by executing the necessary API requests in parallel go routines.
 
 # Installation
 

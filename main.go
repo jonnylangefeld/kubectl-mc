@@ -30,7 +30,7 @@ type MC struct {
 	NegRegex string
 	ListOnly bool
 	MaxProc  int
-	Debug bool
+	Debug    bool
 }
 
 // NewMC registers the default mc command
@@ -51,7 +51,11 @@ mc -r dev -- get pods -n kube-system
 mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep infinity
 
 # list all contexts with 'dev' in the name, but not '-ci-' in the name
-mc -r dev -l -n '-test-'`,
+mc -r dev -l -n '-test-'
+
+# list all pods with label 'app.kubernetes.io/name=audit' in the 'default' namespace from all clusters with 'gke' in the name, but not 'dev'
+# run max 5 processes in parallel and enable debug output
+mc -r gke -n 'dev' -p 5 -d -- get pods -n gatekeeper-system -l app.kubernetes.io/name=audit`,
 		SilenceUsage: true,
 		Version:      version,
 		RunE: func(cmd *cobra.Command, args []string) error {

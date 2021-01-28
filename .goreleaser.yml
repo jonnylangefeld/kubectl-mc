@@ -1,6 +1,12 @@
 # Configuration for https://goreleaser.com/
 project_name: kubectl-mc
 
+builds:
+  - goos:
+      - darwin
+      - linux
+      - windows
+
 release:
   github:
     owner: jonnylangefeld
@@ -8,3 +14,6 @@ release:
   draft: false
   prerelease: false
   name_template: "v{{.Version}}"
+
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
