@@ -30,7 +30,7 @@ spec:
     # run a debug container on every kind cluster in the context
     mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep infinity
 
-    # list all contexts with 'dev' in the name, but not '-ci-' in the name
+    # list all contexts with 'dev' in the name, but not '-test-' in the name
     mc -r dev -l -n '-test-'
 
     # list all pods with label 'app.kubernetes.io/name=audit' in the 'default' namespace from all clusters with 'gke' in the name, but not 'dev'
