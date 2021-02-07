@@ -20,3 +20,11 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
+# gopkg.in/yaml.v2 v2.2.8
+## explicit
+gopkg.in/yaml.v2
+# k8s.io/client-go v11.0.0+incompatible
+## explicit
+# sigs.k8s.io/yaml v1.2.0
+## explicit
+sigs.k8s.io/yaml
