@@ -36,6 +36,9 @@ spec:
     # list all pods with label 'app.kubernetes.io/name=audit' in the 'default' namespace from all clusters with 'gke' in the name, but not 'dev'
     # run max 5 processes in parallel and enable debug output
     mc -r gke -n 'dev' -p 5 -d -- get pods -n gatekeeper-system -l app.kubernetes.io/name=audit
+
+    # print the context and the pod names in kube-system using jq
+    mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k] | .items[].metadata.name)"'
   platforms:
   - selector:
       matchLabels:
