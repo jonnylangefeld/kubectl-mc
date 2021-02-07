@@ -28,7 +28,7 @@ var (
 		JSON: true,
 	}
 
-	ErrUnknownOutput = errors.New(fmt.Sprintf("this output format is unknown. Choose one of %s", outputsString()))
+	ErrUnknownOutput      = errors.New(fmt.Sprintf("this output format is unknown. Choose one of %s", outputsString()))
 	ErrCouldntParseOutput = errors.New(fmt.Sprintf("couldn't parse this output. Are you sure your kubectl command allows for json output? Run command with -d to see debug output"))
 )
 
