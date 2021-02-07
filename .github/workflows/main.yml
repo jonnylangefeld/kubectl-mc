@@ -2,7 +2,6 @@ name: Lint
 
 on:
   push:
-  pull_request:
 
 jobs:
   build:
@@ -12,4 +11,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Lint
-        run: make lint
+        run: make lint && git diff --exit-code
