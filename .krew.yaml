@@ -7,13 +7,10 @@ spec:
   homepage: https://github.com/jonnylangefeld/kubectl-mc
   shortDescription: Run kubectl commands against multiple clusters at once
   description: |+2
-    `kubectl mc` (short for multi cluster) executes commands against multiple 
-    clusters in your context in parallel. The clusters are selected by a 
-    regular expression.
-
-    For example you can list the pods in the kube-system namespace of all development clusters
-    with the following command:
-    mc -r development -- get pods -n kube-system
+    This plugin helps to work with multiple kubernetes clusters at once, filtered by
+    a regular expression. For instance to get the status of a deployment across all 
+    `staging` clusters run the following command:
+    mc -r staging -- get deployments -n kube-system
 
     For more examples run kubectl mc --help
   platforms:
