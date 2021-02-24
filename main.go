@@ -100,7 +100,7 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 	cmd.Flags().StringVarP(&mc.Regex, "regex", "r", mc.Regex, "a regex to filter the list of context names in kubeconfig. If not given all contexts are used")
 	cmd.Flags().StringVarP(&mc.NegRegex, "negative-regex", "n", mc.NegRegex, "a regex to exclude matches from the result set. Evaluated succeeding to the including regex filter")
 	cmd.Flags().BoolVarP(&mc.ListOnly, "list-only", "l", mc.ListOnly, "just list the contexts matching the regex. Good for testing your regex")
-	cmd.Flags().IntVarP(&mc.MaxProc, "max-processes", "p", 100, "max amount of parallel kubectl to be exectued. Can be used to limit cpu activity")
+	cmd.Flags().IntVarP(&mc.MaxProc, "max-processes", "p", 10, "max amount of parallel kubectl to be exectued. Can be used to limit cpu activity")
 	cmd.Flags().BoolVarP(&mc.Debug, "debug", "d", mc.Debug, "enable debug output")
 	cmd.Flags().StringVarP(&mc.Output, "output", "o", mc.Output, fmt.Sprintf("specify the output format. Useful for parsing with another tool like jq or yq. One of %s", outputsString()))
 
