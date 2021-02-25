@@ -8,7 +8,7 @@ spec:
   shortDescription: Run kubectl commands against multiple clusters at once
   description: |+2
     This plugin helps to work with multiple kubernetes clusters at once, filtered by
-    a regular expression. For instance to get the status of a deployment across all 
+    a regular expression. For instance to get the status of a deployment across all
     `staging` clusters run the following command:
     kubectl mc -r staging -- get deployments -n kube-system
   platforms:
