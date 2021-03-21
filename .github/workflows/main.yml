@@ -1,14 +1,18 @@
-name: Lint
+name: Main
 
 on:
   push:
 
 jobs:
   build:
-    name: Lint
+    name: Lint & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Lint
         run: make lint && git diff --exit-code
+      - name: Test
+        run: make test
+      - name: Codecov
+        uses: codecov/codecov-action@v1

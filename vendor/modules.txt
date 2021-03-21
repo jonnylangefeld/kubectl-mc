@@ -1,12 +1,23 @@
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/dlclark/regexp2 v1.4.0
 ## explicit
+# github.com/golang/mock v1.3.1
+## explicit
+github.com/golang/mock/gomock
+github.com/golang/mock/mockgen/model
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/spf13/cobra v1.1.1
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.4.0
+## explicit
+github.com/stretchr/testify/assert
 # go.uber.org/atomic v1.7.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.6.0
@@ -23,6 +34,8 @@ go.uber.org/zap/zapcore
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
+# gotest.tools/v3 v3.0.3
+## explicit
 # k8s.io/client-go v11.0.0+incompatible
 ## explicit
 # sigs.k8s.io/yaml v1.2.0

@@ -1,3 +1,10 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/jonnylangefeld/kubectl-mc)](https://goreportcard.com/report/github.com/jonnylangefeld/kubectl-mc)
+[![codecov](https://codecov.io/gh/jonnylangefeld/kubectl-mc/branch/master/graph/badge.svg?token=Q38GREUVRF)](https://codecov.io/gh/jonnylangefeld/kubectl-mc)
+[![Build](https://img.shields.io/github/workflow/status/jonnylangefeld/kubectl-mc/Main)](https://github.com/jonnylangefeld/kubectl-mc/actions/workflows/main.yml)
+[![Twitter](https://img.shields.io/badge/twitter-@jonnylangefeld-blue.svg)](http://twitter.com/jonnylangefeld)
+[![GitHub release](https://img.shields.io/github/release/jonnylangefeld/kubectl-mc.svg)](https://github.com/jonnylangefeld/kubectl-mc/releases)
+![GitHub](https://img.shields.io/github/license/jonnylangefeld/kubectl-mc)
+
 # A Multi cluster kubectl Client
 
 Run kubectl commands against multiple clusters at once.

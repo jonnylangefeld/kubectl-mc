@@ -4,19 +4,22 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"regexp"
-	"sigs.k8s.io/yaml"
 	"strings"
+
+	_ "github.com/golang/mock/mockgen/model"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"sigs.k8s.io/yaml"
 )
 
 const (
+	// YAML represents the string for yaml
 	YAML = "yaml"
+	// JSON represents the string for json
 	JSON = "json"
 )
 
@@ -28,8 +31,8 @@ var (
 		JSON: true,
 	}
 
-	ErrUnknownOutput      = errors.New(fmt.Sprintf("this output format is unknown. Choose one of %s", outputsString()))
-	ErrCouldntParseOutput = errors.New(fmt.Sprintf("couldn't parse this output. Are you sure your kubectl command allows for json output? Run command with -d to see debug output"))
+	errUnknownOutput      = fmt.Errorf("this output format is unknown. Choose one of %s", outputsString())
+	errCouldntParseOutput = fmt.Errorf("couldn't parse this output. Are you sure your kubectl command allows for json output? Run command with -d to see debug output")
 )
 
 func main() {
@@ -47,6 +50,12 @@ type MC struct {
 	MaxProc  int
 	Debug    bool
 	Output   string
+}
+
+// CMD is an interface for exec.CMD to allow for dependency injection
+//go:generate go run -mod=mod github.com/golang/mock/mockgen --build_flags=-mod=mod -destination=./mocks/cmd.go -package=mocks -source=./main.go
+type CMD interface {
+	CombinedOutput() ([]byte, error)
 }
 
 // NewMC registers the default mc command
@@ -85,7 +94,7 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 			defer logger.Sync()
 			if mc.Output != "" {
 				if _, ok := outputs[mc.Output]; !ok {
-					return ErrUnknownOutput
+					return errUnknownOutput
 				}
 				args = append(args, "-o", "json")
 			}
@@ -93,7 +102,7 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 				cmd.Usage()
 				return nil
 			}
-			return mc.run(args)
+			return mc.run(args, do)
 		},
 	}
 
@@ -109,8 +118,9 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 
 // run executed the main command by listing matched kubernetes contexts and executing the
 // given kubectl args against every context in parallel
-func (mc *MC) run(args []string) error {
-	contexts, err := mc.listContexts()
+// The `do` parameter allows for dependency injection
+func (mc *MC) run(args []string, do func(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, cmd CMD)) error {
+	contexts, err := mc.listContexts(exec.Command("kubectl", getListContextsArgs()...))
 	if err != nil {
 		return err
 	}
@@ -146,7 +156,7 @@ func (mc *MC) run(args []string) error {
 		logger.Debug("waiting for next free spot", zap.String("context", c))
 		<-parallelProc
 		logger.Debug("executing", zap.String("context", c))
-		go do(done, c, output, mc.Output == "", args)
+		go do(done, c, output, mc.Output == "", exec.Command("kubectl", getLocalArgs(args, c)...))
 	}
 	<-wait
 	if mc.Output != "" {
@@ -154,7 +164,7 @@ func (mc *MC) run(args []string) error {
 		o, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
 			logger.Debug("failed to parse output", zap.String("retrieved", fmt.Sprintf("%s", output)))
-			return ErrCouldntParseOutput
+			return errCouldntParseOutput
 		}
 		switch mc.Output {
 		case JSON:
@@ -173,7 +183,7 @@ func (mc *MC) run(args []string) error {
 }
 
 // list context builds a list of context based on a given regex
-func (mc *MC) listContexts() (contexts []string, err error) {
+func (mc *MC) listContexts(cmd CMD) (contexts []string, err error) {
 	r, err := regexp.Compile(mc.Regex)
 	if err != nil {
 		return nil, err
@@ -183,14 +193,12 @@ func (mc *MC) listContexts() (contexts []string, err error) {
 		return nil, err
 	}
 
-	args := []string{"config", "get-contexts", "-o", "name"}
-
-	stdout, err := kubectl(args)
+	stdout, err := kubectl(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	s := bufio.NewScanner(stdout)
+	s := bufio.NewScanner(bytes.NewReader(stdout))
 	for s.Scan() {
 		context := s.Bytes()
 		if r.Match(context) {
@@ -205,8 +213,31 @@ func (mc *MC) listContexts() (contexts []string, err error) {
 }
 
 // do executes a command against kubectl and sends a bool to the done channel when done
-func do(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, args []string) {
-	var localArgs []string
+func do(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, cmd CMD) {
+	stdout, err := kubectl(cmd)
+	if err != nil {
+		stdout = []byte(err.Error())
+	}
+	output[context] = stdout
+	if writeToStdout {
+		fmt.Print(formatContext(context, stdout))
+	}
+	done <- true
+}
+
+// kubectl executes a kubectl command
+func kubectl(cmd CMD) ([]byte, error) {
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf(strings.Replace(strings.Replace(string(out), "error: ", "", -1), "Error: ", "", -1))
+	}
+	return out, nil
+}
+
+// getLocalArgs transforms kubectl args slice by injecting the context flag into the right position.
+// if the kubectl command contained `--` (for instance for a `kubectl exec` command, we inject the context flag before
+// that.
+func getLocalArgs(args []string, context string) (localArgs []string) {
 	var skipContext bool
 	for _, arg := range args {
 		if arg == "--" {
@@ -219,33 +250,25 @@ func do(done chan bool, context string, output map[string]json.RawMessage, write
 	if !skipContext {
 		localArgs = append(localArgs, "--context", context)
 	}
-	stdout, err := kubectl(localArgs)
-	if err != nil {
-		stdout = bytes.NewBuffer([]byte(err.Error()))
-	}
-	output[context] = stdout.Bytes()
-	if writeToStdout {
-		fmt.Printf("\n%s\n%s\n%s", context, strings.Repeat("-", len(context)), string(stdout.Bytes()))
-	}
-	done <- true
+	return
 }
 
-// kubectl executes a kubectl command
-func kubectl(args []string) (*bytes.Buffer, error) {
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("kubectl", args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf(strings.Replace(strings.Replace(stderr.String(), "error: ", "", -1), "Error:", "", -1))
-	}
-	return &stdout, nil
-}
-
+// outputStrings is a helper function to transform the output option map keys into a string separated by `|`
+// It can be used for helpful docstrings
 func outputsString() string {
 	keys := make([]string, 0, len(outputs))
 	for k := range outputs {
 		keys = append(keys, k)
 	}
 	return strings.Join(keys, "|")
+}
+
+// formatContext returns a formated strings with the context has header, separated from the contents by a divider
+func formatContext(context string, stdout []byte) string {
+	return fmt.Sprintf("\n%s\n%s\n%s", context, strings.Repeat("-", len(context)), string(stdout))
+}
+
+// getListContextsArgs is a helper function to retrieve the arguments to list kubeconfig contexts
+func getListContextsArgs() []string {
+	return []string{"config", "get-contexts", "-o", "name"}
 }
