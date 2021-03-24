@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	_ "github.com/golang/mock/mockgen/model"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
@@ -56,7 +55,7 @@ type Cmd interface {
 	CombinedOutput() ([]byte, error)
 }
 
-// NewMC registers the default mc command
+// New registers the default mc command
 func New() *MC {
 	mc := &MC{}
 
