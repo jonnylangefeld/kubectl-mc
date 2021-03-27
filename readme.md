@@ -15,8 +15,13 @@ If you work at a company or organization that maintains multiple Kubernetes clus
 
 # Installation
 
-Run `go get github.com/jonnylangefeld/kubectl-mc`. 
+Run `go get github.com/jonnylangefeld/kubectl-mc`.  
 This will make the binary available on your path and allows you to run it as `kubectl` addon via `kubectl mc`. More [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins).
+
+### Via [`krew`](https://krew.sigs.k8s.io/)
+
+Krew is the plugin manager for the `kubectl` command-line tool.  
+Run `krew install mc` to install mc. You can then use it via `kubectl mc`.
 
 # Usage
 
