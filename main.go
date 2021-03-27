@@ -7,8 +7,12 @@ import (
 	"github.com/jonnylangefeld/kubectl-mc/pkg/mc"
 )
 
+var (
+	version string
+)
+
 func main() {
-	mc := mc.New()
+	mc := mc.New(version)
 	if err := mc.Cmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -24,7 +24,6 @@ const (
 )
 
 var (
-	version string
 	logger  *zap.Logger
 	outputs = map[string]bool{
 		YAML: true,
@@ -57,7 +56,7 @@ type Cmd interface {
 }
 
 // New registers the default mc command
-func New() *MC {
+func New(version string) *MC {
 	mc := &MC{}
 
 	// to allow dependency injection

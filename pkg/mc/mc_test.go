@@ -89,7 +89,7 @@ coredns-66bff467f8-4lnsg                     1/1     Running   1          22h
 			for _, r := range test.kubectlReturns {
 				m.EXPECT().CombinedOutput().Return(r, nil)
 			}
-			mc := New()
+			mc := New("")
 			mc.getListContextsCmd = func() Cmd {
 				return m
 			}
