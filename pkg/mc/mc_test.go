@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -170,8 +171,9 @@ func TestDo(t *testing.T) {
 	m.EXPECT().CombinedOutput().Return(kubectlReturn, nil)
 
 	done := make(chan bool, 1)
+	var mutex = &sync.Mutex{}
 	output := map[string]json.RawMessage{}
-	do(done, context, output, false, nil, m)
+	do(done, context, output, false, nil, m, mutex)
 	assert.True(t, <-done)
 	assert.Equal(t, map[string]json.RawMessage{context: kubectlReturn}, output)
 }

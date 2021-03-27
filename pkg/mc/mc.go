@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -147,6 +148,7 @@ func (mc *MC) run(args []string) error {
 
 	done := make(chan bool)
 	wait := make(chan bool)
+	var mutex = &sync.Mutex{}
 
 	logger.Debug("start wait group")
 	go func() {
@@ -163,7 +165,7 @@ func (mc *MC) run(args []string) error {
 		logger.Debug("waiting for next free spot", zap.String("context", c))
 		<-parallelProc
 		logger.Debug("executing", zap.String("context", c))
-		go do(done, c, output, mc.Output == "", mc.Cmd.OutOrStdout(), mc.getKubectlCmd(args, c))
+		go do(done, c, output, mc.Output == "", mc.Cmd.OutOrStdout(), mc.getKubectlCmd(args, c), mutex)
 	}
 	<-wait
 	if mc.Output != "" {
@@ -220,12 +222,14 @@ func (mc *MC) listContexts(cmd Cmd) (contexts []string, err error) {
 }
 
 // do executes a command against kubectl and sends a bool to the done channel when done
-func do(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, out io.Writer, cmd Cmd) {
+func do(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, out io.Writer, cmd Cmd, mutex *sync.Mutex) {
 	stdout, err := kubectl(cmd)
 	if err != nil {
 		stdout = []byte(err.Error())
 	}
+	mutex.Lock()
 	output[context] = stdout
+	mutex.Unlock()
 	if writeToStdout {
 		fmt.Fprint(out, formatContext(context, stdout))
 	}
