@@ -1,7 +1,8 @@
 package mc
 
 const (
-	context = "kind-kind"
+	context   = "kind-kind"
+	namespace = "default"
 )
 
 var (
