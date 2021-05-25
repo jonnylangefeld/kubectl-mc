@@ -227,5 +227,5 @@ func TestOutputsString(t *testing.T) {
 
 func TestFormatContext(t *testing.T) {
 	got := formatContext(context, namespace, kubectlReturn)
-	assert.Equal(t, "\nkind-kind default\n-----------------\n"+string(kubectlReturn), got)
+	assert.Equal(t, "\nkind-kind: default\n------------------\n"+string(kubectlReturn), got)
 }

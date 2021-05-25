@@ -151,9 +151,11 @@ func (mc *MC) run(args []string) error {
 	wait := make(chan bool)
 	var mutex = &sync.Mutex{}
 
+	namespaces := strings.Split(mc.Namespaces, ",")
+
 	logger.Debug("start wait group")
 	go func() {
-		for i := 0; i < len(contexts)*len(strings.Split(mc.Namespaces, ",")); i++ {
+		for i := 0; i < len(contexts)*len(namespaces); i++ {
 			<-done
 			parallelProc <- true
 		}
@@ -163,7 +165,7 @@ func (mc *MC) run(args []string) error {
 
 	output := map[string]json.RawMessage{}
 	for _, c := range contexts {
-		for _, ns := range strings.Split(mc.Namespaces, ",") {
+		for _, ns := range namespaces {
 			logger.Debug("waiting for next free spot", zap.String("context", c), zap.String("namespace", ns))
 			<-parallelProc
 			logger.Debug("executing", zap.String("context", c), zap.String("namespace", ns))
@@ -292,7 +294,7 @@ func outputsString() string {
 // formatContext returns a formated strings with the context has header, separated from the contents by a divider
 func formatContext(context string, namespace string, stdout []byte) string {
 	if namespace != "" {
-		namespace = " " + namespace
+		namespace = ": " + namespace
 	}
 	return fmt.Sprintf("\n%s%s\n%s\n%s", context, namespace, strings.Repeat("-", len(context)+len(namespace)), string(stdout))
 }
