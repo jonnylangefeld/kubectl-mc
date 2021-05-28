@@ -36,17 +36,18 @@ var (
 
 // MC contains the options of the command
 type MC struct {
-	Cmd      *cobra.Command
-	Regex    string
-	NegRegex string
-	ListOnly bool
-	MaxProc  int
-	Debug    bool
-	Output   string
+	Cmd        *cobra.Command
+	Regex      string
+	NegRegex   string
+	Namespaces string
+	ListOnly   bool
+	MaxProc    int
+	Debug      bool
+	Output     string
 
 	// to allow dependency injection
 	getListContextsCmd func() Cmd
-	getKubectlCmd      func(args []string, context string) Cmd
+	getKubectlCmd      func(args []string, context string, namespace string) Cmd
 }
 
 // Cmd is an interface for exec.Cmd to allow for dependency injection
@@ -63,8 +64,8 @@ func New(version string) *MC {
 	mc.getListContextsCmd = func() Cmd {
 		return exec.Command("kubectl", []string{"config", "get-contexts", "-o", "name"}...)
 	}
-	mc.getKubectlCmd = func(args []string, context string) Cmd {
-		return exec.Command("kubectl", getLocalArgs(args, context)...)
+	mc.getKubectlCmd = func(args []string, context string, namespace string) Cmd {
+		return exec.Command("kubectl", getLocalArgs(args, context, namespace)...)
 	}
 
 	cmd := &cobra.Command{
@@ -112,7 +113,8 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 	}
 
 	cmd.Flags().StringVarP(&mc.Regex, "regex", "r", mc.Regex, "a regex to filter the list of context names in kubeconfig. If not given all contexts are used")
-	cmd.Flags().StringVarP(&mc.NegRegex, "negative-regex", "n", mc.NegRegex, "a regex to exclude matches from the result set. Evaluated succeeding to the including regex filter")
+	cmd.Flags().StringVarP(&mc.NegRegex, "negative-regex", "x", mc.NegRegex, "a regex to exclude matches from the result set. Evaluated succeeding to the including regex filter")
+	cmd.Flags().StringVarP(&mc.Namespaces, "namespaces", "n", mc.Namespaces, "comma-separated list of namespaces. Overrides namespace(s) specified in kubectl command. The default is the current namespace of the context")
 	cmd.Flags().BoolVarP(&mc.ListOnly, "list-only", "l", mc.ListOnly, "just list the contexts matching the regex. Good for testing your regex")
 	cmd.Flags().IntVarP(&mc.MaxProc, "max-processes", "p", 5, "max amount of parallel kubectl to be executed. Can be used to limit cpu activity")
 	cmd.Flags().BoolVarP(&mc.Debug, "debug", "d", mc.Debug, "enable debug output")
@@ -149,9 +151,11 @@ func (mc *MC) run(args []string) error {
 	wait := make(chan bool)
 	var mutex = &sync.Mutex{}
 
+	namespaces := strings.Split(mc.Namespaces, ",")
+
 	logger.Debug("start wait group")
 	go func() {
-		for i := 0; i < len(contexts); i++ {
+		for i := 0; i < len(contexts)*len(namespaces); i++ {
 			<-done
 			parallelProc <- true
 		}
@@ -161,10 +165,12 @@ func (mc *MC) run(args []string) error {
 
 	output := map[string]json.RawMessage{}
 	for _, c := range contexts {
-		logger.Debug("waiting for next free spot", zap.String("context", c))
-		<-parallelProc
-		logger.Debug("executing", zap.String("context", c))
-		go do(done, c, output, mc.Output == "", mc.Cmd.OutOrStdout(), mc.getKubectlCmd(args, c), mutex)
+		for _, ns := range namespaces {
+			logger.Debug("waiting for next free spot", zap.String("context", c), zap.String("namespace", ns))
+			<-parallelProc
+			logger.Debug("executing", zap.String("context", c), zap.String("namespace", ns))
+			go do(done, c, ns, output, mc.Output == "", mc.Cmd.OutOrStdout(), mc.getKubectlCmd(args, c, ns), mutex)
+		}
 	}
 	<-wait
 	if mc.Output != "" {
@@ -221,16 +227,21 @@ func (mc *MC) listContexts(cmd Cmd) (contexts []string, err error) {
 }
 
 // do executes a command against kubectl and sends a bool to the done channel when done
-func do(done chan bool, context string, output map[string]json.RawMessage, writeToStdout bool, out io.Writer, cmd Cmd, mutex *sync.Mutex) {
+func do(done chan bool, context string, namespace string, output map[string]json.RawMessage, writeToStdout bool, out io.Writer, cmd Cmd, mutex *sync.Mutex) {
 	stdout, err := kubectl(cmd)
 	if err != nil {
 		stdout = []byte(err.Error())
 	}
 	mutex.Lock()
-	output[context] = stdout
+
+	cns := context
+	if namespace != "" {
+		cns += ": " + namespace
+	}
+	output[cns] = stdout
 	mutex.Unlock()
 	if writeToStdout {
-		fmt.Fprint(out, formatContext(context, stdout))
+		fmt.Fprint(out, formatContext(context, namespace, stdout))
 	}
 	done <- true
 }
@@ -247,18 +258,25 @@ func kubectl(cmd Cmd) ([]byte, error) {
 // getLocalArgs transforms kubectl args slice by injecting the context flag into the right position.
 // if the kubectl command contained `--` (for instance for a `kubectl exec` command, we inject the context flag before
 // that.
-func getLocalArgs(args []string, context string) (localArgs []string) {
+func getLocalArgs(args []string, context string, namespace string) (localArgs []string) {
+
 	var skipContext bool
 	for _, arg := range args {
 		if arg == "--" {
 			// If this is given, we need to insert the context before this arg
 			localArgs = append(localArgs, "--context", context)
+			if len(namespace) > 0 {
+				localArgs = append(localArgs, "--namespace", namespace)
+			}
 			skipContext = true
 		}
 		localArgs = append(localArgs, arg)
 	}
 	if !skipContext {
 		localArgs = append(localArgs, "--context", context)
+		if len(namespace) > 0 {
+			localArgs = append(localArgs, "--namespace", namespace)
+		}
 	}
 	return
 }
@@ -274,6 +292,9 @@ func outputsString() string {
 }
 
 // formatContext returns a formated strings with the context has header, separated from the contents by a divider
-func formatContext(context string, stdout []byte) string {
-	return fmt.Sprintf("\n%s\n%s\n%s", context, strings.Repeat("-", len(context)), string(stdout))
+func formatContext(context string, namespace string, stdout []byte) string {
+	if namespace != "" {
+		namespace = ": " + namespace
+	}
+	return fmt.Sprintf("\n%s%s\n%s\n%s", context, namespace, strings.Repeat("-", len(context)+len(namespace)), string(stdout))
 }

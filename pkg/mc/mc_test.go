@@ -93,7 +93,7 @@ coredns-66bff467f8-4lnsg                     1/1     Running   1          22h
 			mc.getListContextsCmd = func() Cmd {
 				return m
 			}
-			mc.getKubectlCmd = func(args []string, context string) Cmd {
+			mc.getKubectlCmd = func(args []string, context string, namespace string) Cmd {
 				return m
 			}
 			b := bytes.NewBuffer([]byte(``))
@@ -173,9 +173,9 @@ func TestDo(t *testing.T) {
 	done := make(chan bool, 1)
 	var mutex = &sync.Mutex{}
 	output := map[string]json.RawMessage{}
-	do(done, context, output, false, nil, m, mutex)
+	do(done, context, namespace, output, false, nil, m, mutex)
 	assert.True(t, <-done)
-	assert.Equal(t, map[string]json.RawMessage{context: kubectlReturn}, output)
+	assert.Equal(t, map[string]json.RawMessage{context + ": " + namespace: kubectlReturn}, output)
 }
 
 func TestKubectl(t *testing.T) {
@@ -204,17 +204,17 @@ func TestGetLocalArgs(t *testing.T) {
 	}{
 		"default": {
 			args: []string{"get", "pods", "-n", "kube-system"},
-			want: []string{"get", "pods", "-n", "kube-system", "--context", context},
+			want: []string{"get", "pods", "-n", "kube-system", "--context", context, "--namespace", namespace},
 		},
 		"exec": {
 			args: []string{"exec", "deployment/local-path-provisioner", "-n", "local-path-storage", "-it", "--", "ls", "/usr"},
-			want: []string{"exec", "deployment/local-path-provisioner", "-n", "local-path-storage", "-it", "--context", context, "--", "ls", "/usr"},
+			want: []string{"exec", "deployment/local-path-provisioner", "-n", "local-path-storage", "-it", "--context", context, "--namespace", namespace, "--", "ls", "/usr"},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := getLocalArgs(test.args, context)
+			got := getLocalArgs(test.args, context, namespace)
 			assert.Equal(t, test.want, got)
 		})
 	}
@@ -226,6 +226,6 @@ func TestOutputsString(t *testing.T) {
 }
 
 func TestFormatContext(t *testing.T) {
-	got := formatContext(context, kubectlReturn)
-	assert.Equal(t, "\nkind-kind\n---------\n"+string(kubectlReturn), got)
+	got := formatContext(context, namespace, kubectlReturn)
+	assert.Equal(t, "\nkind-kind: default\n------------------\n"+string(kubectlReturn), got)
 }
