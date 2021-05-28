@@ -175,7 +175,7 @@ func TestDo(t *testing.T) {
 	output := map[string]json.RawMessage{}
 	do(done, context, namespace, output, false, nil, m, mutex)
 	assert.True(t, <-done)
-	assert.Equal(t, map[string]json.RawMessage{context + " " + namespace: kubectlReturn}, output)
+	assert.Equal(t, map[string]json.RawMessage{context + ": " + namespace: kubectlReturn}, output)
 }
 
 func TestKubectl(t *testing.T) {
