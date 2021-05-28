@@ -82,11 +82,14 @@ mc -r dev -- get pods -n kube-system
 mc --regex kind -- run debug --image=markeijsermans/debug --command -- sleep infinity
 
 # list all contexts with 'dev' in the name, but not '-test-' in the name
-mc -r dev -l -n '-test-'
+mc -r dev -l -x '-test-'
 
 # list all pods with label 'app.kubernetes.io/name=audit' in the 'default' namespace from all clusters with 'gke' in the name, but not 'dev'
 # run max 5 processes in parallel and enable debug output
-mc -r gke -n 'dev' -p 5 -d -- get pods -n gatekeeper-system -l app.kubernetes.io/name=audit
+mc -r gke -x 'dev' -p 5 -d -- get pods -n gatekeeper-system -l app.kubernetes.io/name=audit
+
+# get deployments in 3 namespaces ns-1,ns-2 and ns-3 from all clusters with 'prod' in the name, running 10 parallel processes
+mc -r prod -n ns-1,ns-2,ns-3 -p 10 -- get deployments
 
 # print the context and the pod names in kube-system using jq
 mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k] | .items[].metadata.name)"'`,
