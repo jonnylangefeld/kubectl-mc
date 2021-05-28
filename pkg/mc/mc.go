@@ -236,7 +236,7 @@ func do(done chan bool, context string, namespace string, output map[string]json
 
 	cns := context
 	if namespace != "" {
-		cns += " " + namespace
+		cns += ": " + namespace
 	}
 	output[cns] = stdout
 	mutex.Unlock()
