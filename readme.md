@@ -36,7 +36,7 @@ Note: the `-o output` must be specified for the `kubectl mc` command and not the
 Wrong usage for automation:
 
 ```
-shell$ kubectl mc -r testcluster -- get node --sort-by="{.metadata.creationTimestamp}" -o yaml
+$ kubectl mc -r testcluster -- get node --sort-by="{.metadata.creationTimestamp}" -o yaml
 
 ```
 
