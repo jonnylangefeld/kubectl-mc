@@ -43,7 +43,7 @@ $ kubectl mc -r testcluster -- get node --sort-by="{.metadata.creationTimestamp}
 Example yaml output:
 
 ```
-shell$ kubectl mc -r testcluster -o yaml -- get node --sort-by="{.metadata.creationTimestamp}"
+$ kubectl mc -r testcluster -o yaml -- get node --sort-by="{.metadata.creationTimestamp}"
 testcluster1:
   apiVersion: v1
   items:
