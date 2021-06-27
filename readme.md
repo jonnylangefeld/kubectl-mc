@@ -27,6 +27,95 @@ Run `krew install mc` to install mc. You can then use it via `kubectl mc`.
 
 Run `kubectl mc` for help.
 
+## Using `kubectl mc` in automation with jq and yq
+
+The `kubectl mc` command supports native json and yaml output. This allows for effective usage for automations and inventory run scenarios in multicluster setups using `jq` and `yq`. 
+
+Note: the `-o output` must be specified for the `kubectl mc` command and not the kubectl argument, as it produces different output. When specified as a kubectl argument, the output is not machine parsable as it does not present a valid json / yaml object.
+
+Wrong usage for automation:
+
+```
+$ kubectl mc -r testcluster -- get node --sort-by="{.metadata.creationTimestamp}" -o yaml
+
+```
+
+Example yaml output:
+
+```
+$ kubectl mc -r testcluster -o yaml -- get node --sort-by="{.metadata.creationTimestamp}"
+testcluster1:
+  apiVersion: v1
+  items:
+  - apiVersion: v1
+    kind: Node
+	...
+  - apiVersion: v1
+    kind: Node
+testcluster2:
+  apiVersion: v1
+  items:
+  - apiVersion: v1
+    kind: Node
+	...
+  - apiVersion: v1
+    kind: Node
+```
+
+Example json output:
+
+```
+$ kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}"
+{
+  "testcluster1": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+		...
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+		...
+	]
+  },
+  "testcluster2": {
+    "apiVersion": "v1",
+    "items": [
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+		...
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+		...
+	]
+  }
+}
+```
+
+In this example the key `testcluster1` is the context name in your kubectl context file. The value of the hash is the results from the kubectl call as you are used to. This can easily be used in automations.
+
+* Access a single cluster
+
+
+```
+# Get all nodes with testclusters matching "lab"
+kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}" | jq -r '.testcluster1.items[] | .metadata.name'
+# Example when context names contain special characters
+kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}" | jq -r '."aws:region1:testcluster".items[] | .metadata.name'
+```
+
+* Access a few clusters following a pattern
+
+```
+# Get all nodes with testclusters matching "lab"
+kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}" | jq -r 'to_entries[] | select(.key | test("lab")) | .value.items[] | .metadata.name'
+```
+
+
 # UX
 
 ```bash
