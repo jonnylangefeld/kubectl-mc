@@ -29,7 +29,7 @@ Run `kubectl mc` for help.
 
 ## Using `kubectl mc` in automation with jq and yq
 
-The `kubectl mc` command supports native json any yaml output. This allows for effective usage for automations and inventory run scenarios in multicluster setups using `jq`and `yq`. 
+The `kubectl mc` command supports native json and yaml output. This allows for effective usage for automations and inventory run scenarios in multicluster setups using `jq` and `yq`. 
 
 Note: the `-o output` must be specified for the `kubectl mc` command and not the kubectl argument, as it produces different output. When specified as a kubectl argument, the output is not machine parsable as it does not present a valid json / yaml object.
 
