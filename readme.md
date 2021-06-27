@@ -65,7 +65,7 @@ testcluster2:
 Example json output:
 
 ```
-shell$ kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}"
+$ kubectl mc -r testcluster -o json -- get node --sort-by="{.metadata.creationTimestamp}"
 {
   "testcluster1": {
     "apiVersion": "v1",
