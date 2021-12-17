@@ -85,9 +85,9 @@ coredns-66bff467f8-4lnsg                     1/1     Running   1          22h
 		t.Run(name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			m := mocks.NewMockCmd(ctrl)
-			m.EXPECT().CombinedOutput().Return(test.listContextsReturn, nil)
+			m.EXPECT().Output().Return(test.listContextsReturn, nil)
 			for _, r := range test.kubectlReturns {
-				m.EXPECT().CombinedOutput().Return(r, nil)
+				m.EXPECT().Output().Return(r, nil)
 			}
 			mc := New("")
 			mc.getListContextsCmd = func() Cmd {
@@ -152,7 +152,7 @@ gke_project-prod_cluster-prod
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			m.EXPECT().CombinedOutput().Return(test.kubectlReturn, nil)
+			m.EXPECT().Output().Return(test.kubectlReturn, nil)
 			mc := MC{
 				Regex:    test.regex,
 				NegRegex: test.negRegex,
@@ -168,7 +168,7 @@ func TestDo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	m := mocks.NewMockCmd(ctrl)
 
-	m.EXPECT().CombinedOutput().Return(kubectlReturn, nil)
+	m.EXPECT().Output().Return(kubectlReturn, nil)
 
 	done := make(chan bool, 1)
 	var mutex = &sync.Mutex{}
@@ -182,13 +182,13 @@ func TestKubectl(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	m := mocks.NewMockCmd(ctrl)
 
-	m.EXPECT().CombinedOutput().Return(kubectlReturn, nil)
+	m.EXPECT().Output().Return(kubectlReturn, nil)
 
 	got, err := kubectl(m)
 	assert.NoError(t, err)
 	assert.Equal(t, kubectlReturn, got)
 
-	m.EXPECT().CombinedOutput().Return([]byte(`Error: unknown shorthand flag: 'a' in -abc
+	m.EXPECT().Output().Return([]byte(`Error: unknown shorthand flag: 'a' in -abc
 See 'kubectl get --help' for usage.`), errors.New(""))
 
 	got, err = kubectl(m)

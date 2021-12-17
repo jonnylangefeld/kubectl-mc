@@ -53,7 +53,7 @@ type MC struct {
 // Cmd is an interface for exec.Cmd to allow for dependency injection
 //go:generate go run -mod=mod github.com/golang/mock/mockgen --build_flags=-mod=mod -destination=./mocks/cmd.go -package=mocks -source=./mc.go
 type Cmd interface {
-	CombinedOutput() ([]byte, error)
+	Output() ([]byte, error)
 }
 
 // New registers the default mc command
@@ -251,7 +251,7 @@ func do(done chan bool, context string, namespace string, output map[string]json
 
 // kubectl executes a kubectl command
 func kubectl(cmd Cmd) ([]byte, error) {
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf(strings.Replace(strings.Replace(string(out), "error: ", "", -1), "Error: ", "", -1))
 	}
