@@ -105,7 +105,13 @@ mc -r kind -o json -- get pods -n kube-system | jq 'keys[] as $k | "\($k) \(.[$k
 				if _, ok := outputs[mc.Output]; !ok {
 					return errUnknownOutput
 				}
-				args = append(args, "-o", "json")
+				raw := false
+				for _, arg := range args {
+					raw = raw || strings.HasPrefix(arg, "--raw")
+				}
+				if !raw {
+					args = append(args, "-o", "json")
+				}
 			}
 			if len(args) == 0 && !mc.ListOnly {
 				cmd.Usage()
