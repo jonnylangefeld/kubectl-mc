@@ -261,7 +261,11 @@ func do(done chan bool, context string, namespace string, output map[string]json
 func kubectl(cmd Cmd) ([]byte, error) {
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf(strings.Replace(strings.Replace(string(err.(*exec.ExitError).Stderr), "error: ", "", -1), "Error: ", "", -1))
+		errString := err.Error()
+		if err, ok := err.(*exec.ExitError); ok {
+			errString = string(err.Stderr)
+		}
+		return nil, fmt.Errorf(strings.Replace(strings.Replace(errString, "error: ", "", -1), "Error: ", "", -1))
 	}
 	return out, nil
 }

@@ -3,8 +3,8 @@ package mc
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
+	"os/exec"
 	"sync"
 	"testing"
 
@@ -188,8 +188,8 @@ func TestKubectl(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, kubectlReturn, got)
 
-	m.EXPECT().Output().Return([]byte(`Error: unknown shorthand flag: 'a' in -abc
-See 'kubectl get --help' for usage.`), errors.New(""))
+	m.EXPECT().Output().Return(nil, &exec.ExitError{Stderr: []byte(`Error: unknown shorthand flag: 'a' in -abc
+See 'kubectl get --help' for usage.`)})
 
 	got, err = kubectl(m)
 	assert.Nil(t, got)
