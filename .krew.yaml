@@ -20,9 +20,21 @@ spec:
     bin: kubectl-mc
   - selector:
       matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+    bin: kubectl-mc
+  - selector:
+      matchLabels:
         os: linux
         arch: amd64
     {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    bin: kubectl-mc
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
     bin: kubectl-mc
   - selector:
       matchLabels:
