@@ -38,7 +38,31 @@ spec:
     bin: kubectl-mc
   - selector:
       matchLabels:
+        os: linux
+        arch: arm
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_linux_armv7.tar.gz" .TagName }}
+    bin: kubectl-mc
+  - selector:
+      matchLabels:
+        os: linux
+        arch: "386"
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_linux_386.tar.gz" .TagName }}
+    bin: kubectl-mc
+  - selector:
+      matchLabels:
         os: windows
         arch: amd64
     {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+    bin: kubectl-mc.exe
+  - selector:
+      matchLabels:
+        os: windows
+        arch: arm64
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_windows_arm64.tar.gz" .TagName }}
+    bin: kubectl-mc.exe
+  - selector:
+      matchLabels:
+        os: windows
+        arch: "386"
+    {{addURIAndSha "https://github.com/jonnylangefeld/kubectl-mc/releases/download/{{ .TagName }}/kubectl-mc_{{ .TagName }}_windows_386.tar.gz" .TagName }}
     bin: kubectl-mc.exe

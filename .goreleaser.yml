@@ -6,6 +6,16 @@ builds:
       - darwin
       - linux
       - windows
+    goarch:
+      - amd64
+      - arm
+      - arm64
+      - 386
+    goarm:
+      - 7
+    ignore:
+      - goos: windows
+        goarch: arm
 
 release:
   github:
