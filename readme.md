@@ -15,8 +15,8 @@ If you work at a company or organization that maintains multiple Kubernetes clus
 
 # Installation
 
-Run `go get github.com/jonnylangefeld/kubectl-mc`.  
-This will make the binary available on your path and allows you to run it as `kubectl` addon via `kubectl mc`. More [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins).
+Run `go install github.com/jonnylangefeld/kubectl-mc@latest`.  
+This will make the latest binary available on your path and allows you to run it as `kubectl` addon via `kubectl mc`. More [here](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins).
 
 ### Via [`krew`](https://krew.sigs.k8s.io/)
 
