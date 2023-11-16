@@ -51,6 +51,7 @@ type MC struct {
 }
 
 // Cmd is an interface for exec.Cmd to allow for dependency injection
+//
 //go:generate go run -mod=mod github.com/golang/mock/mockgen --build_flags=-mod=mod -destination=./mocks/cmd.go -package=mocks -source=./mc.go
 type Cmd interface {
 	Output() ([]byte, error)
